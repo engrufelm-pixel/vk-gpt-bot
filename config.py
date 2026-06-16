@@ -13,6 +13,11 @@ GPT_PROVIDER = os.getenv("GPT_PROVIDER", "aitunnel")  # "aitunnel" или "opena
 AITUNNEL_API_KEY = os.getenv("AITUNNEL_API_KEY", "")
 AITUNNEL_BASE_URL = os.getenv("AITUNNEL_BASE_URL", "https://api.aitunnel.ru/v1")
 AITUNNEL_MODEL = os.getenv("AITUNNEL_MODEL", "gpt-4o-mini")
+AITUNNEL_IMAGE_MODEL = os.getenv("AITUNNEL_IMAGE_MODEL", "gemini-2.5-flash-image")
+
+# ── Примерочная (image-генерация) ──────────────────
+IMAGE_MAX_SIDE = 1024
+IMAGE_TIMEOUT = 120.0
 
 # ── OpenAI (резерв) ────────────────────────────────
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
