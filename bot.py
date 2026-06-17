@@ -1,6 +1,6 @@
 """
 VK-бот для сообщества по ремонту квартир.
-- Главное меню: «Задать вопрос» (AI-консультант) и «Начать ремонт пошагово» (примерочная).
+- Главное меню: «Задать вопрос» (AI-консультант) и «Сделать ремонт на фото» (примерочная).
 - Примерочная: фото комнаты -> меню операций (мебель, обои, дверь, потолок, пол)
   или пошаговый ремонт, накапливающий результат.
 Запуск: python bot.py
@@ -176,7 +176,7 @@ GREETING = (
     "Здравствуйте! Это бот компании «ГладкоСтелимОбои».\n\n"
     "Выберите, чем помочь:\n"
     "• «Задать вопрос» — отвечу как мастер: цены, сроки, технология.\n"
-    "• «Начать ремонт пошагово» — пришлите фото комнаты, и я покажу, "
+    "• «Сделать ремонт на фото» — пришлите фото комнаты, и я покажу, "
     "как она будет выглядеть после ремонта: новые обои, пол, дверь, потолок "
     "или всё сразу пошагово."
 )
@@ -217,7 +217,7 @@ def begin_single_op(user_id: int, kind: str) -> None:
     op = OPS[kind]
     base = states.get(user_id, "room_bytes")
     if not base:
-        show_main_menu(user_id, "Сначала пришлите фото комнаты. Нажмите «Начать ремонт пошагово».")
+        show_main_menu(user_id, "Сначала пришлите фото комнаты. Нажмите «Сделать ремонт на фото».")
         return
 
     if op["input"] is None:
@@ -276,7 +276,7 @@ def show_after_result(user_id: int, text: str, attachment: str) -> None:
 def start_wizard(user_id: int) -> None:
     base = states.get(user_id, "room_bytes")
     if not base:
-        show_main_menu(user_id, "Сначала пришлите фото комнаты. Нажмите «Начать ремонт пошагово».")
+        show_main_menu(user_id, "Сначала пришлите фото комнаты. Нажмите «Сделать ремонт на фото».")
         return
     states.set(user_id, "work_bytes", base)
     states.set(user_id, "step_idx", 0)
@@ -424,7 +424,7 @@ def handle_photo(user_id: int, event, mode: str) -> None:
         show_operations_menu(
             user_id,
             "Фото комнаты получено. Что сделаем?\n"
-            "Выберите операцию или «Ремонт пошагово».",
+            "Выберите операцию или «Начать ремонт пошагово».",
         )
         return
 
@@ -448,7 +448,7 @@ def handle_photo(user_id: int, event, mode: str) -> None:
         return
 
     # Фото вне контекста — мягко возвращаем в меню
-    show_main_menu(user_id, "Чтобы начать ремонт, нажмите «Начать ремонт пошагово».")
+    show_main_menu(user_id, "Чтобы начать ремонт, нажмите «Сделать ремонт на фото».")
 
 
 # ─────────────────────────────────────────────────────
@@ -503,7 +503,7 @@ def handle_event(event) -> None:
                 keyboard=keyboards.BACK_ONLY,
             )
             return
-        if text == "Начать ремонт пошагово":
+        if text == "Сделать ремонт на фото":
             start_remont(user_id)
             return
         show_main_menu(user_id)
@@ -528,7 +528,7 @@ def handle_event(event) -> None:
         if text == "Другое фото":
             start_remont(user_id)
             return
-        if text == "Ремонт пошагово":
+        if text == "Начать ремонт пошагово":
             start_wizard(user_id)
             return
         kind = OP_BY_BUTTON.get(text)
