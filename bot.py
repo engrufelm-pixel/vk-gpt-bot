@@ -600,11 +600,33 @@ def handle_event(event) -> None:
 # Main loop
 # ─────────────────────────────────────────────────────
 
+def startup_diagnostics() -> None:
+    """Проверка при старте: какой VK-токен загружен и есть ли право photos.
+    Помогает понять, что контейнер читает именно тот токен, что нужно."""
+    tok = config.VK_TOKEN or ""
+    logger.info("VK_TOKEN: длина=%d, окончание=...%s", len(tok), tok[-6:] if tok else "<пусто>")
+    try:
+        vk.photos.getMessagesUploadServer()
+        logger.info("Проверка прав: photos OK — загрузка фото в сообщения доступна.")
+    except vk_api.exceptions.ApiError as e:
+        if getattr(e, "code", None) == 15:
+            logger.error(
+                "Проверка прав: у токена НЕТ права 'photos' (ошибка [15]). "
+                "Картинки отправляться НЕ будут. Загрузите токен сообщества с правом "
+                "«Доступ к фотографиям сообщества» в переменную VK_TOKEN и перезапустите."
+            )
+        else:
+            logger.warning("Проверка прав: photos, вероятно, есть (ошибка не [15]): %s", e)
+    except Exception:
+        logger.exception("Проверка прав: не удалось проверить scope photos")
+
+
 def main() -> None:
     logger.info(
         "Бот запущен (текст: %s/%s, картинки: %s)",
         config.GPT_PROVIDER, GPT_MODEL, config.AITUNNEL_IMAGE_MODEL,
     )
+    startup_diagnostics()
     logger.info("Ожидание сообщений...")
 
     for event in longpoll.listen():
