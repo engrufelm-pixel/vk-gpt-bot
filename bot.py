@@ -264,12 +264,15 @@ def run_single_job(user_id: int, kind: str, base: bytes,
             "или загрузить новое фото.",
             attachment,
         )
-    except Exception as e:
+    except Exception:
         logger.exception("Ошибка одиночной операции kind=%s user=%s", kind, user_id)
-        show_operations_menu(
+        states.set_mode(user_id, "remont_menu")
+        send(
             user_id,
-            f"Не удалось выполнить «{op['label']}»: {type(e).__name__}.\n"
-            "Попробуйте ещё раз или выберите другую операцию.",
+            f"Не получилось обработать «{op['label']}». Это бывает из-за "
+            "временной загрузки сервиса визуализации. Нажмите «Повторить» "
+            "или выберите другую операцию.",
+            keyboard=keyboards.REMONT_RESULT_MENU,
         )
 
 
@@ -347,9 +350,9 @@ def run_step_job(user_id: int, kind: str, base: bytes,
         states.set(user_id, "work_bytes", result)
         attachment = upload_photo_to_messages(vk, user_id, result)
         send(user_id, f"Шаг {idx + 1} готов: «{op['label']}».", attachment=attachment)
-    except Exception as e:
+    except Exception:
         logger.exception("Ошибка шага kind=%s user=%s", kind, user_id)
-        send(user_id, f"Шаг «{op['label']}» не удался ({type(e).__name__}), пропускаю.")
+        send(user_id, f"Шаг «{op['label']}» не получился, пропускаю.")
     finally:
         states.set(user_id, "step_idx", idx + 1)
         offer_step(user_id)
