@@ -222,12 +222,7 @@ def begin_single_op(user_id: int, kind: str) -> None:
 
     if op["input"] is None:
         # Без доп. ввода — сразу генерируем
-        states.set_mode(user_id, "render")
-        send(user_id, f"{op['doing']} Это займёт около 30 секунд.")
-        threading.Thread(
-            target=run_single_job, args=(user_id, kind, base),
-            kwargs={}, daemon=True,
-        ).start()
+        launch_single(user_id, kind, base)
         return
 
     if op["input"] == "photo":
@@ -238,6 +233,20 @@ def begin_single_op(user_id: int, kind: str) -> None:
     if op["input"] == "text":
         states.set_mode(user_id, "wait_ceiling")
         send(user_id, op["ask"], keyboard=keyboards.CEILING_INPUT)
+
+
+def launch_single(user_id: int, kind: str, base: bytes,
+                  material: bytes | None = None, description: str | None = None) -> None:
+    """Запускает одиночную операцию в фоне и сохраняет её параметры для «Повторить»."""
+    states.set(user_id, "last_op", {
+        "kind": kind, "base": base, "material": material, "description": description,
+    })
+    states.set_mode(user_id, "render")
+    send(user_id, f"{OPS[kind]['doing']} Это займёт около 30 секунд.")
+    threading.Thread(
+        target=run_single_job, args=(user_id, kind, base),
+        kwargs={"material": material, "description": description}, daemon=True,
+    ).start()
 
 
 def run_single_job(user_id: int, kind: str, base: bytes,
@@ -439,12 +448,7 @@ def handle_photo(user_id: int, event, mode: str) -> None:
         if photo_bytes is None:
             return
         base = states.get(user_id, "room_bytes")
-        states.set_mode(user_id, "render")
-        send(user_id, f"{OPS[photo_kind]['doing']} Это займёт около 30 секунд.")
-        threading.Thread(
-            target=run_single_job, args=(user_id, photo_kind, base),
-            kwargs={"material": photo_bytes}, daemon=True,
-        ).start()
+        launch_single(user_id, photo_kind, base, material=photo_bytes)
         return
 
     # Фото вне контекста — мягко возвращаем в меню
@@ -525,6 +529,16 @@ def handle_event(event) -> None:
             else:
                 show_operations_menu(user_id, "Нет готового результата. Выберите операцию.")
             return
+        if text == "Повторить":
+            last_op = states.get(user_id, "last_op")
+            if last_op:
+                launch_single(
+                    user_id, last_op["kind"], last_op["base"],
+                    material=last_op.get("material"), description=last_op.get("description"),
+                )
+            else:
+                show_operations_menu(user_id, "Нет операции для повтора. Выберите операцию.")
+            return
         if text == "Другое фото":
             start_remont(user_id)
             return
@@ -548,12 +562,7 @@ def handle_event(event) -> None:
     if mode == "wait_ceiling":
         base = states.get(user_id, "room_bytes")
         desc = None if text_lower == CEILING_STD_WORD else text
-        states.set_mode(user_id, "render")
-        send(user_id, f"{OPS['ceiling']['doing']} Это займёт около 30 секунд.")
-        threading.Thread(
-            target=run_single_job, args=(user_id, "ceiling", base),
-            kwargs={"description": desc}, daemon=True,
-        ).start()
+        launch_single(user_id, "ceiling", base, description=desc)
         return
 
     # ── Визард: предложение шага ──
